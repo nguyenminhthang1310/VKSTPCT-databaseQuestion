@@ -13,7 +13,7 @@ app.use(express.json());
 // ✅ Cấu hình CORS
 app.use(
   cors({
-    origin: "http://localhost:5173", // cho phép frontend Vite gọi API
+    origin: ["http://localhost:5173", "https://vkstpct-software.vercel.app"], // cho phép frontend Vite gọi API
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })
