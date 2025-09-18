@@ -20,6 +20,24 @@ router.get("/rank", async (req, res) => {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 });
+// GET /users?donvi=Phòng 1
+router.get("/sort", async (req, res) => {
+  try {
+    const { donvi } = req.query;
+    let query = {};
+
+    if (donvi) {
+      query.donvi = donvi; // lọc theo đơn vị nếu có
+    }
+
+    const users = await User.find(query).sort({ donvi: 1 });
+    res.json(users);
+  } catch (err) {
+    console.error("❌ Lỗi lấy users:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
 router.get("/:id", async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
