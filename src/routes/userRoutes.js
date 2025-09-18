@@ -7,6 +7,31 @@ router.get("/", async (req, res) => {
   const users = await User.find();
   res.json(users);
 });
+// Xếp hạng theo điểm và thời gian
+router.get("/rank", async (req, res) => {
+  try {
+    const users = await User.find().sort({ traloidung: -1, thoigianlambai: 1 });
+    // -1: điểm cao nhất trước
+    //  1: thời gian ít nhất trước (nhanh hơn)
+
+    res.json(users);
+  } catch (err) {
+    console.error("❌ Lỗi tại /users/rank:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+router.get("/:id", async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: "User không tồn tại" });
+    }
+    res.json(user);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Lỗi server", error: err });
+  }
+});
 
 // Thêm user
 router.post("/", async (req, res) => {
@@ -39,19 +64,6 @@ router.put("/:id", async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 });
-// Xếp hạng theo điểm và thời gian
-router.get("/rank", async (req, res) => {
-  try {
-    const users = await User.find().sort({ traloidung: -1, thoigianlambai: 1 });
-    // -1: điểm cao nhất trước
-    //  1: thời gian ít nhất trước (nhanh hơn)
-
-    res.json(users);
-  } catch (err) {
-    console.error("❌ Lỗi tại /users/rank:", err);
-    res.status(500).json({ message: "Server error", error: err.message });
-  }
-});
 
 //xóa all
 router.delete("/all", async (req, res) => {
@@ -64,6 +76,18 @@ router.delete("/all", async (req, res) => {
   } catch (err) {
     console.error("❌ Lỗi khi xoá all users:", err);
     res.status(500).json({ message: err.message });
+  }
+});
+router.delete("/:id", async (req, res) => {
+  try {
+    const deletedUser = await User.findByIdAndDelete(req.params.id);
+    if (!deletedUser) {
+      return res.status(404).json({ message: "User không tồn tại" });
+    }
+    res.json({ message: "Xóa user thành công", user: deletedUser });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Lỗi server", error: err });
   }
 });
 module.exports = router;

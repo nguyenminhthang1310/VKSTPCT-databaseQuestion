@@ -11,7 +11,7 @@ function shuffleArray(array) {
 }
 // Lấy danh sách cau hoi
 router.get("/", async (req, res) => {
-  const questions = await Question.find().limit(10);
+  const questions = await Question.find();
   res.json(shuffleArray(questions));
 });
 
@@ -47,4 +47,25 @@ router.delete("/", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+router.put("/:id", async (req, res) => {
+  try {
+    const { cauhoi, traloi, dapan } = req.body;
+
+    const updated = await Question.findByIdAndUpdate(
+      req.params.id,
+      { cauhoi, traloi, dapan },
+      { new: true } // trả về object sau khi update
+    );
+
+    if (!updated) {
+      return res.status(404).json({ message: "Không tìm thấy câu hỏi" });
+    }
+
+    res.json({ message: "Cập nhật thành công", question: updated });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Lỗi server", error: err });
+  }
+});
+
 module.exports = router;
