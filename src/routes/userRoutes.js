@@ -1,14 +1,21 @@
 const express = require("express");
 const User = require("../models/Users");
 const router = express.Router();
-
+// Middleware kiểm tra header
+function checkAuth(req, res, next) {
+  const authHeader = req.headers["authorization"];
+  if (!authHeader || authHeader !== `Bearer ${process.env.API_SECRET}`) {
+    return res.status(403).json({ error: "Forbidden: Invalid token" });
+  }
+  next();
+}
 // Lấy danh sách user
-router.get("/", async (req, res) => {
+router.get("/", checkAuth, async (req, res) => {
   const users = await User.find();
   res.json(users);
 });
 // Xếp hạng theo điểm và thời gian
-router.get("/rank", async (req, res) => {
+router.get("/rank", checkAuth, async (req, res) => {
   try {
     const users = await User.find().sort({ traloidung: -1, thoigianlambai: 1 });
     // -1: điểm cao nhất trước
@@ -21,7 +28,7 @@ router.get("/rank", async (req, res) => {
   }
 });
 // GET /users?donvi=Phòng 1
-router.get("/sort", async (req, res) => {
+router.get("/sort", checkAuth, async (req, res) => {
   try {
     const { donvi } = req.query;
     let query = {};
@@ -38,7 +45,7 @@ router.get("/sort", async (req, res) => {
   }
 });
 
-router.get("/:id", async (req, res) => {
+router.get("/:id", checkAuth, async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     if (!user) {
@@ -52,7 +59,7 @@ router.get("/:id", async (req, res) => {
 });
 
 // Thêm user
-router.post("/", async (req, res) => {
+router.post("/", checkAuth, async (req, res) => {
   try {
     const { hoten, donvi } = req.body;
     const newUser = await User.create({ hoten, donvi });
@@ -63,7 +70,7 @@ router.post("/", async (req, res) => {
 });
 
 // Sửa user
-router.put("/:id", async (req, res) => {
+router.put("/:id", checkAuth, async (req, res) => {
   try {
     const { id } = req.params; // lấy id từ URL
     const updateData = req.body; // dữ liệu gửi lên để update
@@ -84,7 +91,7 @@ router.put("/:id", async (req, res) => {
 });
 
 //xóa all
-router.delete("/all", async (req, res) => {
+router.delete("/all", checkAuth, async (req, res) => {
   try {
     const result = await User.deleteMany({});
     res.status(200).json({
@@ -96,7 +103,7 @@ router.delete("/all", async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", checkAuth, async (req, res) => {
   try {
     const deletedUser = await User.findByIdAndDelete(req.params.id);
     if (!deletedUser) {

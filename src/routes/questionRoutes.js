@@ -9,14 +9,22 @@ function shuffleArray(array) {
   }
   return array;
 }
+// Middleware kiểm tra header
+function checkAuth(req, res, next) {
+  const authHeader = req.headers["authorization"];
+  if (!authHeader || authHeader !== `Bearer ${process.env.API_SECRET}`) {
+    return res.status(403).json({ error: "Forbidden: Invalid token" });
+  }
+  next();
+}
 // Lấy danh sách cau hoi
-router.get("/", async (req, res) => {
+router.get("/", checkAuth, async (req, res) => {
   const questions = await Question.find();
   res.json(shuffleArray(questions));
 });
 
 // Thêm cau hoi
-router.post("/", async (req, res) => {
+router.post("/", checkAuth, async (req, res) => {
   try {
     const { cauhoi, traloi, dapan } = req.body;
     const newQuestion = await Question.create({ cauhoi, traloi, dapan });
@@ -25,7 +33,7 @@ router.post("/", async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 });
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", checkAuth, async (req, res) => {
   try {
     const deleted = await Question.findByIdAndDelete(req.params.id);
     if (!deleted) {
@@ -36,7 +44,7 @@ router.delete("/:id", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-router.delete("/", async (req, res) => {
+router.delete("/", checkAuth, async (req, res) => {
   try {
     const result = await Question.deleteMany({});
     res.json({
@@ -47,7 +55,7 @@ router.delete("/", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-router.put("/:id", async (req, res) => {
+router.put("/:id", checkAuth, async (req, res) => {
   try {
     const { cauhoi, traloi, dapan } = req.body;
 
