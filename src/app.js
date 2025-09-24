@@ -2,6 +2,7 @@ const express = require("express");
 const connectDB = require("./config/db");
 const userRoutes = require("./routes/userRoutes");
 const questionRoutes = require("./routes/questionRoutes");
+const submissionRouters = require("./routes/submissionRouter");
 require("dotenv").config();
 const cors = require("cors");
 
@@ -22,11 +23,15 @@ app.use(
 // Routes
 app.use("/users", userRoutes);
 app.use("/questions", questionRoutes);
+app.use("/submission", submissionRouters);
+
 
 // Kết nối DB và chạy server
 const PORT = process.env.PORT || 3000;
 connectDB().then(() => {
   app.listen(PORT, () =>
-    console.log(`🚀 Server running at http://localhost:${PORT}`)
+    console.log(
+      `🚀 Server running at http://localhost:${PORT}, ${process.env.API_SECRET}`
+    )
   );
 });
