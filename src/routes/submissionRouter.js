@@ -1,37 +1,52 @@
-import axios from "axios";
-const API_URL = "https://vkstpct-databasequestion.onrender.com/submission";
-const token = import.meta.env.VITE_API_TOKEN;
+const express = require("express");
+const Submission = require("../models/Submission");
 
-// Hàm GET tất cả submission
-export async function fetchSubmission() {
-  try {
-    const res = await axios.get(API_URL, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
-    console.log("📤 GET submissions:", res.data);
-    return res.data;
-  } catch (err) {
-    console.error("❌ Lỗi GET submissions:", err);
-    throw err;
-  }
-}
+const router = express.Router();
 
-// Hàm POST tạo submission mới
-export async function createSubmission(data) {
+// ✅ POST: tạo submission
+router.post("/", async (req, res) => {
   try {
-    const res = await axios.post(API_URL, data, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
-    console.log("📤 POST submission:", res.data);
-    return res.data;
+    console.log("📥 Nhận submission:", req.body);
+
+    const submission = new Submission(req.body);
+    const saved = await submission.save();
+
+    console.log("✅ Lưu submission thành công:", saved);
+    res.status(201).json(saved);
   } catch (err) {
-    console.error("❌ Lỗi POST submission:", err);
-    throw err;
+    console.error("❌ Lỗi khi lưu submission:", err.message);
+    res.status(500).json({ error: err.message });
   }
-}
+});
+
+// ✅ GET: lấy tất cả submissions
+router.get("/", async (req, res) => {
+  try {
+    const submissions = await Submission.find().sort({ createdAt: -1 });
+    res.json(submissions);
+  } catch (err) {
+    console.error("❌ Lỗi lấy submissions:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ✅ GET: lấy submissions theo user_id
+router.get("/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const submissions = await Submission.find({ user_id: userId }).sort({
+      createdAt: -1,
+    });
+
+    if (!submissions.length) {
+      return res.status(404).json({ message: "Không tìm thấy submission" });
+    }
+
+    res.json(submissions);
+  } catch (err) {
+    console.error("❌ Lỗi lấy submissions theo user:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+module.exports = router;
