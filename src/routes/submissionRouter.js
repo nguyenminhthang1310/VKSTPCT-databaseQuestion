@@ -49,4 +49,25 @@ router.get("/:userId", async (req, res) => {
   }
 });
 
+// ✅ DELETE: xóa submissions theo userId
+router.delete("/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const result = await Submission.deleteMany({ user_id: userId });
+
+    if (result.deletedCount === 0) {
+      return res
+        .status(404)
+        .json({ message: "Không tìm thấy submission để xóa" });
+    }
+
+    res.json({
+      message: `Đã xóa ${result.deletedCount} submissions của user ${userId}`,
+    });
+  } catch (err) {
+    console.error("❌ Lỗi khi xóa submissions:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
