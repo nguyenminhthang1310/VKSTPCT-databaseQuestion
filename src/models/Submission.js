@@ -7,7 +7,7 @@ const submissionSchema = new mongoose.Schema(
       {
         cauhoi: String,
         dapanchon: String,
-        dapan_dung: Number,
+        dapan_dung: String,
       },
     ],
   },
