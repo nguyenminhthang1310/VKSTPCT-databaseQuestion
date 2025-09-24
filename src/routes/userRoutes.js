@@ -61,8 +61,8 @@ router.get("/:id", checkAuth, async (req, res) => {
 // Thêm user
 router.post("/", checkAuth, async (req, res) => {
   try {
-    const { hoten, donvi } = req.body;
-    const newUser = await User.create({ hoten, donvi });
+    const { hoten, donvi, phone } = req.body;
+    const newUser = await User.create({ hoten, donvi, phone });
     res.json(newUser);
   } catch (err) {
     res.status(400).json({ error: err.message });

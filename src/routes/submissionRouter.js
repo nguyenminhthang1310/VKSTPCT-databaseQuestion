@@ -11,7 +11,7 @@ router.post("/", async (req, res) => {
     const submission = new Submission(req.body);
     const saved = await submission.save();
 
-    console.log("✅ Lưu submission thành công:", saved);
+    // console.log("✅ Lưu submission thành công:", saved);
     res.status(201).json(saved);
   } catch (err) {
     console.error("❌ Lỗi khi lưu submission:", err.message);
