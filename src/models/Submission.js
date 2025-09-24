@@ -7,11 +7,13 @@ const submissionSchema = new mongoose.Schema(
       {
         cauhoi: String,
         dapanchon: String,
-        dapan_dung: String,
+        dapan_dung: String, // 👈 Bắt buộc là String
       },
     ],
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model("Submission", submissionSchema);
+// 👇 Thêm dòng này để đảm bảo dùng schema mới, tránh cache schema cũ
+module.exports =
+  mongoose.models.Submission || mongoose.model("Submission", submissionSchema);
