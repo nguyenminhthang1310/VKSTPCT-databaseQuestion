@@ -17,22 +17,52 @@ function checkAuth(req, res, next) {
   }
   next();
 }
+//get all
+router.get("/all", checkAuth, async (req, res) => {
+  const questions = await Question.find();
+  res.json(questions);
+});
 // Lấy danh sách cau hoi
 router.get("/", checkAuth, async (req, res) => {
-  const questions = await Question.find();
-  res.json(shuffleArray(questions));
+  try {
+    const questions = await Question.find();
+
+    const grouped = [[], [], [], [], []];
+    questions.forEach((q, idx) => {
+      const phan = Math.floor(idx / 20); // 0 → 4
+      grouped[phan].push(q);
+    });
+
+    let selected = [];
+    const soLuongMoiPhan = 4;
+
+    grouped.forEach((arr) => {
+      const shuffled = shuffleArray(arr);
+      selected = selected.concat(shuffled.slice(0, soLuongMoiPhan));
+    });
+
+    res.json(shuffleArray(selected));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// Thêm cau hoi
 router.post("/", checkAuth, async (req, res) => {
   try {
-    const { cauhoi, traloi, dapan } = req.body;
-    const newQuestion = await Question.create({ cauhoi, traloi, dapan });
-    res.json(newQuestion);
+    let data = req.body;
+
+    // Nếu là 1 object thì đưa vào mảng
+    if (!Array.isArray(data)) {
+      data = [data];
+    }
+
+    const newQuestions = await Question.insertMany(data);
+    res.json(newQuestions);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
+
 router.delete("/:id", checkAuth, async (req, res) => {
   try {
     const deleted = await Question.findByIdAndDelete(req.params.id);
