@@ -22,23 +22,33 @@ router.get("/all", checkAuth, async (req, res) => {
   const questions = await Question.find();
   res.json(questions);
 });
-// Lấy danh sách cau hoi
 router.get("/", checkAuth, async (req, res) => {
   try {
     const questions = await Question.find();
 
-    const grouped = [[], [], [], [], []];
+    if (!questions.length) {
+      return res.json([]); // không có câu hỏi nào
+    }
+
+    const soCauMoiPhan = 20;
+    const soLuongMoiPhan = 7;
+    const tongSoPhan = Math.ceil(questions.length / soCauMoiPhan);
+
+    // Tạo mảng grouped với số phần đúng bằng dữ liệu thực tế
+    const grouped = Array.from({ length: tongSoPhan }, () => []);
+
     questions.forEach((q, idx) => {
-      const phan = Math.floor(idx / 20); // 0 → 4
+      const phan = Math.floor(idx / soCauMoiPhan);
       grouped[phan].push(q);
     });
 
     let selected = [];
-    const soLuongMoiPhan = 4;
 
     grouped.forEach((arr) => {
-      const shuffled = shuffleArray(arr);
-      selected = selected.concat(shuffled.slice(0, soLuongMoiPhan));
+      if (arr.length) {
+        const shuffled = shuffleArray(arr);
+        selected = selected.concat(shuffled.slice(0, soLuongMoiPhan));
+      }
     });
 
     res.json(shuffleArray(selected));
