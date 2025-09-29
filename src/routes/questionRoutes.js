@@ -22,6 +22,7 @@ router.get("/all", checkAuth, async (req, res) => {
   const questions = await Question.find();
   res.json(questions);
 });
+//Get one
 router.get("/", checkAuth, async (req, res) => {
   try {
     const questions = await Question.find();
@@ -31,7 +32,7 @@ router.get("/", checkAuth, async (req, res) => {
     }
 
     const soCauMoiPhan = 20;
-    const soLuongMoiPhan = 7;
+    const soLuongMoiPhan = 6;
     const tongSoPhan = Math.ceil(questions.length / soCauMoiPhan);
 
     // Tạo mảng grouped với số phần đúng bằng dữ liệu thực tế
