@@ -31,28 +31,11 @@ router.get("/", checkAuth, async (req, res) => {
       return res.json([]); // không có câu hỏi nào
     }
 
-    const soCauMoiPhan = 20;
-    const soLuongMoiPhan = 6;
-    const tongSoPhan = Math.ceil(questions.length / soCauMoiPhan);
+    const soCau = 20; // số câu cần hiển thị
+    const shuffled = shuffleArray(questions); // xáo trộn toàn bộ
+    const selected = shuffled.slice(0, soCau); // lấy 20 câu
 
-    // Tạo mảng grouped với số phần đúng bằng dữ liệu thực tế
-    const grouped = Array.from({ length: tongSoPhan }, () => []);
-
-    questions.forEach((q, idx) => {
-      const phan = Math.floor(idx / soCauMoiPhan);
-      grouped[phan].push(q);
-    });
-
-    let selected = [];
-
-    grouped.forEach((arr) => {
-      if (arr.length) {
-        const shuffled = shuffleArray(arr);
-        selected = selected.concat(shuffled.slice(0, soLuongMoiPhan));
-      }
-    });
-
-    res.json(shuffleArray(selected));
+    res.json(selected);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
