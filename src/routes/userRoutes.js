@@ -73,7 +73,7 @@ router.post("/", async (req, res) => {
     if (count >= 3) {
       return res
         .status(400)
-        .json({ error: "Người dùng đã vượt quá số lần đăng nhập!" });
+        .json({ error: "Vuot qua 3 lan" });
     }
 
     // 2. Tạo user mới
