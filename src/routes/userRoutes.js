@@ -59,16 +59,33 @@ router.get("/:id", checkAuth, async (req, res) => {
 });
 
 // Thêm user
-router.post("/", checkAuth, async (req, res) => {
+router.post("/", async (req, res) => {
   try {
     const { hoten, donvi, phone } = req.body;
+
+    if (!hoten || !donvi || !phone) {
+      return res.status(400).json({ error: "Vui lòng nhập đầy đủ thông tin!" });
+    }
+
+    // 1. Đếm số lần user với cùng hoten + phone
+    const count = await User.countDocuments({ hoten, phone });
+
+    if (count >= 3) {
+      return res
+        .status(400)
+        .json({ error: "Người dùng đã vượt quá số lần đăng nhập!" });
+    }
+
+    // 2. Tạo user mới
     const newUser = await User.create({ hoten, donvi, phone });
+
+    // 3. Trả về user mới
     res.json(newUser);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: "Có lỗi xảy ra, vui lòng thử lại!" });
   }
 });
-
 // Sửa user
 router.put("/:id", checkAuth, async (req, res) => {
   try {

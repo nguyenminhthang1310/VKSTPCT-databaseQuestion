@@ -6,7 +6,6 @@ const userSchema = new mongoose.Schema(
     hoten: { type: String, required: true },
     donvi: { type: String, required: true },
     phone: { type: String, required: true },
-    landangnhap: { type: Number, default: 3 },
     traloidung: { type: Number, default: 0 },
     thoigianlambai: { type: String, default: "" },
   },
