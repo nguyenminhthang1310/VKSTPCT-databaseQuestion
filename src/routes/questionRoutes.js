@@ -49,15 +49,20 @@ const shuffleAnswers = (question) => {
 
   // Nếu câu có cụm “A và B đúng”, “Tất cả đúng” thì bỏ shuffle
   const text = originalAnswers.join(" ").toLowerCase();
-  if (
-    text.includes("Đáp án A, B đều đúng") ||
-    text.includes("Cả A, B, C đều đúng") ||
-    text.includes("Câu A, C đều đúng") ||
-    text.includes("Đáp án A và C đều đúng") ||
-    text.includes("Câu A, B đều đúng") ||
-    text.includes("Câu B, C đều đúng") ||
-    question.lockAnswers
-  ) {
+
+  const specialPatterns = [
+    "a, b đều đúng",
+    "a và b đều đúng",
+    "a và c đều đúng",
+    "a, c đều đúng",
+    "b, c đều đúng",
+    "a, b, c đều đúng",
+    "tất cả đều đúng",
+    "tất cả các đáp án đều đúng",
+  ];
+
+  if (specialPatterns.some((p) => text.includes(p))) {
+    // console.log("⚠️ Bỏ qua shuffle vì câu đặc biệt:", text);
     return question;
   }
 
