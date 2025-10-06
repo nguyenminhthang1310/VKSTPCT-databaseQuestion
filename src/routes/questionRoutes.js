@@ -2,6 +2,13 @@ const express = require("express");
 const Question = require("../models/Questions");
 const router = express.Router();
 
+// function shuffleArray(array) {
+//   for (let i = array.length - 1; i > 0; i--) {
+//     const j = Math.floor(Math.random() * (i + 1));
+//     [array[i], array[j]] = [array[j], array[i]];
+//   }
+//   return array;
+// }
 // Middleware kiểm tra header
 function checkAuth(req, res, next) {
   const authHeader = req.headers["authorization"];
@@ -16,7 +23,6 @@ router.get("/all", checkAuth, async (req, res) => {
   res.json(questions);
 });
 
-//Get one
 // Hàm xáo trộn mảng
 const shuffleArray = (array) => {
   const arr = [...array];
@@ -33,28 +39,44 @@ const getRandomInRange = (arr, start, end, count) => {
   return shuffleArray(filtered).slice(0, count);
 };
 
-// 🧠 Hàm trộn câu trả lời và cập nhật chỉ số đáp án đúng
+// 🧠 Hàm trộn câu trả lời (xử lý nhiều đáp án đúng & câu đặc biệt)
 const shuffleAnswers = (question) => {
   const originalAnswers = question.traloi;
-  const correctIndex = question.dapan;
+  const correct = question.dapan; // có thể là 1 số hoặc mảng số
 
-  // Tạo mảng [đáp án, có đúng không]
-  const answerPairs = originalAnswers.map((ans, index) => ({
+  // Nếu không có traloi hoặc chỉ có 1 đáp án thì không cần shuffle
+  if (!originalAnswers || originalAnswers.length <= 1) return question;
+
+  // Nếu câu có cụm “A và B đúng”, “Tất cả đúng” thì bỏ shuffle
+  const text = originalAnswers.join(" ").toLowerCase();
+  if (
+    text.includes("a và b") ||
+    text.includes("a,b") ||
+    text.includes("tất cả") ||
+    text.includes("cả a và b") ||
+    question.lockAnswers
+  ) {
+    return question;
+  }
+
+  // Tạo mảng [đáp án, index cũ, có đúng không]
+  const answerPairs = originalAnswers.map((ans, i) => ({
     text: ans,
-    isCorrect: index === correctIndex,
+    isCorrect: Array.isArray(correct) ? correct.includes(i) : i === correct,
   }));
 
-  // Xáo trộn mảng
+  // Shuffle mảng
   const shuffled = shuffleArray(answerPairs);
 
-  // Tìm lại chỉ số của đáp án đúng sau khi shuffle
-  const newCorrectIndex = shuffled.findIndex((a) => a.isCorrect);
+  // Tìm lại chỉ số đúng sau shuffle
+  const newCorrectIndexes = shuffled
+    .map((a, i) => (a.isCorrect ? i : -1))
+    .filter((i) => i !== -1);
 
-  // Trả về question mới
   return {
     ...(question.toObject?.() ?? question),
     traloi: shuffled.map((a) => a.text),
-    dapan: newCorrectIndex,
+    dapan: Array.isArray(correct) ? newCorrectIndexes : newCorrectIndexes[0],
   };
 };
 
@@ -82,6 +104,21 @@ router.get("/", checkAuth, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// Hàm xáo trộn mảng
+// function shuffleArray(array) {
+//   let currentIndex = array.length,
+//     randomIndex;
+//   while (currentIndex !== 0) {
+//     randomIndex = Math.floor(Math.random() * currentIndex);
+//     currentIndex--;
+//     [array[currentIndex], array[randomIndex]] = [
+//       array[randomIndex],
+//       array[currentIndex],
+//     ];
+//   }
+//   return array;
+// }
 
 router.post("/", checkAuth, async (req, res) => {
   try {
