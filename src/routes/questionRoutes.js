@@ -50,10 +50,12 @@ const shuffleAnswers = (question) => {
   // Nếu câu có cụm “A và B đúng”, “Tất cả đúng” thì bỏ shuffle
   const text = originalAnswers.join(" ").toLowerCase();
   if (
-    text.includes("a và b") ||
-    text.includes("a,b") ||
-    text.includes("tất cả") ||
-    text.includes("cả a và b") ||
+    text.includes("Đáp án A, B đều đúng") ||
+    text.includes("Cả A, B, C đều đúng") ||
+    text.includes("Câu A, C đều đúng") ||
+    text.includes("Đáp án A và C đều đúng") ||
+    text.includes("Câu A, B đều đúng") ||
+    text.includes("Câu B, C đều đúng") ||
     question.lockAnswers
   ) {
     return question;
