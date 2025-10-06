@@ -70,10 +70,8 @@ router.post("/", async (req, res) => {
     // 1. Đếm số lần user với cùng hoten + phone
     const count = await User.countDocuments({ hoten, phone });
 
-    if (count >= 3) {
-      return res
-        .status(400)
-        .json({ error: "Vuot qua 3 lan" });
+    if (count >= 2) {
+      return res.status(400).json({ error: "Vuot qua 2 lan" });
     }
 
     // 2. Tạo user mới
