@@ -2,13 +2,6 @@ const express = require("express");
 const Question = require("../models/Questions");
 const router = express.Router();
 
-function shuffleArray(array) {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
-  return array;
-}
 // Middleware kiểm tra header
 function checkAuth(req, res, next) {
   const authHeader = req.headers["authorization"];
@@ -22,21 +15,70 @@ router.get("/all", checkAuth, async (req, res) => {
   const questions = await Question.find();
   res.json(questions);
 });
+
 //Get one
+// Hàm xáo trộn mảng
+const shuffleArray = (array) => {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+};
+
+// Hàm random trong khoảng index
+const getRandomInRange = (arr, start, end, count) => {
+  const filtered = arr.slice(start, end + 1);
+  return shuffleArray(filtered).slice(0, count);
+};
+
+// 🧠 Hàm trộn câu trả lời và cập nhật chỉ số đáp án đúng
+const shuffleAnswers = (question) => {
+  const originalAnswers = question.traloi;
+  const correctIndex = question.dapan;
+
+  // Tạo mảng [đáp án, có đúng không]
+  const answerPairs = originalAnswers.map((ans, index) => ({
+    text: ans,
+    isCorrect: index === correctIndex,
+  }));
+
+  // Xáo trộn mảng
+  const shuffled = shuffleArray(answerPairs);
+
+  // Tìm lại chỉ số của đáp án đúng sau khi shuffle
+  const newCorrectIndex = shuffled.findIndex((a) => a.isCorrect);
+
+  // Trả về question mới
+  return {
+    ...(question.toObject?.() ?? question),
+    traloi: shuffled.map((a) => a.text),
+    dapan: newCorrectIndex,
+  };
+};
+
 router.get("/", checkAuth, async (req, res) => {
   try {
     const questions = await Question.find();
+    if (!questions.length) return res.json([]);
 
-    if (!questions.length) {
-      return res.json([]); // không có câu hỏi nào
-    }
+    let selected = [];
 
-    const soCau = 20; // số câu cần hiển thị
-    const shuffled = shuffleArray(questions); // xáo trộn toàn bộ
-    const selected = shuffled.slice(0, soCau); // lấy 20 câu
+    selected = selected.concat(getRandomInRange(questions, 0, 15, 3)); // Phần 1
+    selected = selected.concat(getRandomInRange(questions, 16, 29, 3)); // Phần 2
+    selected = selected.concat(getRandomInRange(questions, 30, 42, 3)); // Phần 3
+    selected = selected.concat(getRandomInRange(questions, 43, 62, 3)); // Phần 4
+    selected = selected.concat(getRandomInRange(questions, 63, 84, 2)); // Phần 5
+    selected = selected.concat(getRandomInRange(questions, 85, 90, 3)); // Phần 6
+    selected = selected.concat(getRandomInRange(questions, 91, 101, 3)); // Phần 7
 
-    res.json(selected);
+    // 🔥 Trộn đáp án trong mỗi câu hỏi
+    const randomizedQuestions = selected.map((q) => shuffleAnswers(q));
+
+    res.json(randomizedQuestions);
   } catch (err) {
+    console.error("Error fetching questions:", err);
     res.status(500).json({ error: err.message });
   }
 });
