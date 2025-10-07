@@ -59,28 +59,56 @@ router.get("/:id", checkAuth, async (req, res) => {
 });
 
 // Thêm user
+
 router.post("/", async (req, res) => {
   try {
     const { hoten, donvi, phone } = req.body;
 
-    if (!hoten || !donvi || !phone) {
-      return res.status(400).json({ error: "Vui lòng nhập đầy đủ thông tin!" });
+    // 1️⃣ Kiểm tra nhập đủ thông tin
+    if (!hoten?.trim() || !donvi?.trim() || !phone?.trim()) {
+      return res
+        .status(400)
+        .json({ error: "⚠️ Vui lòng nhập đầy đủ thông tin!" });
     }
 
-    // 1. Đếm số lần user với cùng hoten + phone
-    const count = await User.countDocuments({ hoten, phone });
+    // 2️⃣ Chuẩn hóa họ tên (bỏ khoảng trắng thừa, viết thường toàn bộ)
+    const normalizedHoten = hoten.trim().toLowerCase();
+    const normalizedPhone = phone.trim();
+
+    // 3️⃣ Kiểm tra họ tên có nằm trong danh sách cho phép không (không phân biệt hoa thường)
+    const allowed = danhSach.some(
+      (ten) => ten.trim().toLowerCase() === normalizedHoten
+    );
+
+    if (!allowed) {
+      return res.status(400).json({
+        error: "⚠️ Họ tên này không có trong danh sách được phép đăng nhập!",
+      });
+    }
+
+    // 4️⃣ Đếm số lần đăng nhập theo họ tên + phone (không phân biệt hoa/thường)
+    const count = await User.countDocuments({
+      hoten: { $regex: new RegExp(`^${normalizedHoten}$`, "i") },
+      phone: normalizedPhone,
+    });
 
     if (count >= 2) {
-      return res.status(400).json({ error: "Vuot qua 2 lan" });
+      return res.status(400).json({
+        error: "⚠️ Bạn đã vượt quá số lần đăng nhập cho phép!",
+      });
     }
 
-    // 2. Tạo user mới
-    const newUser = await User.create({ hoten, donvi, phone });
+    // 5️⃣ Nếu chưa vượt quá -> tạo user mới
+    const newUser = await User.create({
+      hoten: hoten.trim(), // lưu giữ nguyên tên người nhập (để xem đẹp hơn)
+      donvi: donvi.trim(),
+      phone: normalizedPhone,
+    });
 
-    // 3. Trả về user mới
+    // 6️⃣ Trả về user mới
     res.json(newUser);
   } catch (err) {
-    console.error(err);
+    console.error("❌ Lỗi khi xử lý đăng nhập:", err);
     res.status(500).json({ error: "Có lỗi xảy ra, vui lòng thử lại!" });
   }
 });
