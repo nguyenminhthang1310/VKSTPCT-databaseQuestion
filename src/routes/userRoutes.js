@@ -58,7 +58,6 @@ router.get("/:id", checkAuth, async (req, res) => {
   }
 });
 
-// Thêm user
 router.post("/", async (req, res) => {
   try {
     const { hoten, donvi, phone } = req.body;
@@ -69,22 +68,28 @@ router.post("/", async (req, res) => {
     }
 
     // 2️⃣ Chuẩn hóa dữ liệu
-    const normalizedHoten = hoten.trim().toLowerCase();
+    const normalizedHoten = hoten.trim();
     const normalizedPhone = phone.trim();
 
-    // 3️⃣ Đếm số lần user có cùng họ tên (bất kể hoa/thường) và số điện thoại
+    // 🧩 Escape tên để tránh lỗi regex
+    const escapedHoten = normalizedHoten.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+    // 3️⃣ Kiểm tra xem họ tên đã tồn tại (không phân biệt hoa/thường)
     const count = await User.countDocuments({
-      hoten: { $regex: new RegExp(`^${normalizedHoten}$`, "i") },
-      phone: normalizedPhone,
+      hoten: { $regex: new RegExp(`^${escapedHoten}$`, "i") },
     });
 
+    console.log("🧩 Check user:", normalizedHoten, "=>", count, "lần");
+
     if (count >= 2) {
-      return res.status(400).json({ error: "Vuot qua 2 lan" });
+      return res
+        .status(400)
+        .json({ error: "Họ tên này đã xuất hiện quá 2 lần!" });
     }
 
     // 4️⃣ Nếu chưa vượt quá -> tạo user mới
     const newUser = await User.create({
-      hoten: hoten.trim(),
+      hoten: normalizedHoten,
       donvi: donvi.trim(),
       phone: normalizedPhone,
     });
