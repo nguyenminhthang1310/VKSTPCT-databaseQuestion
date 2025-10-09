@@ -70,6 +70,7 @@ const shuffleAnswers = (question) => {
     "câu a, b đều đúng",
     "câu a và b đều đúng",
     "câu a, c đúng",
+    "câu a, c đều đúng",
     "câu a và c đều đúng",
     "câu b, c đều đúng",
     "câu a, b, c đều đúng",
@@ -78,11 +79,12 @@ const shuffleAnswers = (question) => {
     "tất cả đúng",
     "tất cả đều đúng",
     "tất cả các đáp án đều đúng",
+
   ];
 
   // Nếu phát hiện là câu đặc biệt => GIỮ NGUYÊN, không shuffle
   if (specialPatterns.some((p) => text.includes(p))) {
-    console.log("⚠️ Không shuffle:", question.cauhoi, question.dapan);
+    // console.log("⚠️ Không shuffle:", question.cauhoi, question.dapan);
     return question;
   }
 
