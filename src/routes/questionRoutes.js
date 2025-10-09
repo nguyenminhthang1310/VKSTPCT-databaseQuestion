@@ -53,6 +53,7 @@ const shuffleAnswers = (question) => {
   const specialPatterns = [
     "câu a, b đều đúng",
     "câu a và b đều đúng",
+    "câu a và c đúng",
     "câu a và c đều đúng",
     "câu a, c đều đúng",
     "câu b, c đều đúng",
