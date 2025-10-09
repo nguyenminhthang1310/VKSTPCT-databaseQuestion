@@ -24,6 +24,23 @@ router.get("/all", checkAuth, async (req, res) => {
 });
 
 // Hàm xáo trộn mảng
+// const shuffleArray = (array) => {
+//   const arr = [...array];
+//   for (let i = arr.length - 1; i > 0; i--) {
+//     const j = Math.floor(Math.random() * (i + 1));
+//     [arr[i], arr[j]] = [arr[j], arr[i]];
+//   }
+//   return arr;
+// };
+
+// Hàm random trong khoảng index
+const getRandomInRange = (arr, start, end, count) => {
+  const filtered = arr.slice(start, end + 1);
+  return shuffleArray(filtered).slice(0, count);
+};
+
+// 🧠 Hàm trộn câu trả lời (xử lý nhiều đáp án đúng & câu đặc biệt)
+// 🔁 Hàm xáo trộn mảng
 const shuffleArray = (array) => {
   const arr = [...array];
   for (let i = arr.length - 1; i > 0; i--) {
@@ -33,13 +50,7 @@ const shuffleArray = (array) => {
   return arr;
 };
 
-// Hàm random trong khoảng index
-const getRandomInRange = (arr, start, end, count) => {
-  const filtered = arr.slice(start, end + 1);
-  return shuffleArray(filtered).slice(0, count);
-};
-
-// 🧠 Hàm trộn câu trả lời (xử lý nhiều đáp án đúng & câu đặc biệt)
+// 🧠 Hàm trộn đáp án — bỏ qua shuffle nếu là câu đặc biệt
 const shuffleAnswers = (question) => {
   const originalAnswers = question.traloi;
   const correct = question.dapan; // có thể là 1 số hoặc mảng số
@@ -47,36 +58,42 @@ const shuffleAnswers = (question) => {
   // Nếu không có traloi hoặc chỉ có 1 đáp án thì không cần shuffle
   if (!originalAnswers || originalAnswers.length <= 1) return question;
 
-  // Nếu câu có cụm “A và B đúng”, “Tất cả đúng” thì bỏ shuffle
-  const text = originalAnswers.join(" ").toLowerCase();
+  // Gộp toàn bộ nội dung để phát hiện câu đặc biệt
+  const text = (
+    question.cauhoi +
+    " " +
+    originalAnswers.join(" ")
+  ).toLowerCase();
 
+  // Các cụm đặc biệt (giữ nguyên thứ tự)
   const specialPatterns = [
     "câu a, b đều đúng",
     "câu a và b đều đúng",
     "câu a, c đúng",
     "câu a và c đều đúng",
-    "câu a, c đều đúng",
     "câu b, c đều đúng",
     "câu a, b, c đều đúng",
+    "cả a và b đều đúng",
+    "cả a, b, c đều đúng",
+    "tất cả đúng",
     "tất cả đều đúng",
     "tất cả các đáp án đều đúng",
   ];
 
+  // Nếu phát hiện là câu đặc biệt => GIỮ NGUYÊN, không shuffle
   if (specialPatterns.some((p) => text.includes(p))) {
-    // console.log("⚠️ Bỏ qua shuffle vì câu đặc biệt:", text);
+    console.log("⚠️ Không shuffle:", question.cauhoi, question.dapan);
     return question;
   }
 
-  // Tạo mảng [đáp án, index cũ, có đúng không]
+  // 🔀 Shuffle các câu bình thường
   const answerPairs = originalAnswers.map((ans, i) => ({
     text: ans,
     isCorrect: Array.isArray(correct) ? correct.includes(i) : i === correct,
   }));
 
-  // Shuffle mảng
   const shuffled = shuffleArray(answerPairs);
 
-  // Tìm lại chỉ số đúng sau shuffle
   const newCorrectIndexes = shuffled
     .map((a, i) => (a.isCorrect ? i : -1))
     .filter((i) => i !== -1);
