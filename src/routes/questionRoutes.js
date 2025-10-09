@@ -79,7 +79,6 @@ const shuffleAnswers = (question) => {
     "tất cả đúng",
     "tất cả đều đúng",
     "tất cả các đáp án đều đúng",
-
   ];
 
   // Nếu phát hiện là câu đặc biệt => GIỮ NGUYÊN, không shuffle
