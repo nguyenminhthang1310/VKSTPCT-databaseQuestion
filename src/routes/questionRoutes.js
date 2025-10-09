@@ -51,12 +51,12 @@ const shuffleAnswers = (question) => {
   const text = originalAnswers.join(" ").toLowerCase();
 
   const specialPatterns = [
-    "a, b đều đúng",
-    "a và b đều đúng",
-    "a và c đều đúng",
-    "a, c đều đúng",
-    "b, c đều đúng",
-    "a, b, c đều đúng",
+    "câu a, b đều đúng",
+    "câu a và b đều đúng",
+    "câu a và c đều đúng",
+    "câu a, c đều đúng",
+    "câu b, c đều đúng",
+    "câu a, b, c đều đúng",
     "tất cả đều đúng",
     "tất cả các đáp án đều đúng",
   ];
