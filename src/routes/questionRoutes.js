@@ -119,7 +119,8 @@ router.get("/", checkAuth, async (req, res) => {
     selected = selected.concat(getRandomInRange(questions, 43, 62, 3)); // Phần 4 NQ57
     selected = selected.concat(getRandomInRange(questions, 63, 84, 3)); // Phần 5
     selected = selected.concat(getRandomInRange(questions, 85, 90, 3)); // Phần 6
-    selected = selected.concat(getRandomInRange(questions, 91, 101, 2)); // Phần 7 NQ129
+    selected = selected.concat(getRandomInRange(questions, 91, 99, 2)); // Phần 7 NQ129
+    selected = selected.concat(getRandomInRange(questions, 100, 101, 1)); // Tinh huong
 
     // 🔥 Trộn đáp án trong mỗi câu hỏi
     const randomizedQuestions = selected.map((q) => shuffleAnswers(q));
@@ -191,7 +192,7 @@ router.put("/:id", checkAuth, async (req, res) => {
     const updated = await Question.findByIdAndUpdate(
       req.params.id,
       { cauhoi, traloi, dapan },
-      { new: true } // trả về object sau khi update
+      { new: true }, // trả về object sau khi update
     );
 
     if (!updated) {
