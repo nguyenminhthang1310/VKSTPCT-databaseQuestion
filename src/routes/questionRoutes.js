@@ -113,14 +113,8 @@ router.get("/", checkAuth, async (req, res) => {
 
     let selected = [];
 
-    selected = selected.concat(getRandomInRange(questions, 0, 15, 3)); // Phần 1
-    selected = selected.concat(getRandomInRange(questions, 16, 29, 3)); // Phần 2
-    selected = selected.concat(getRandomInRange(questions, 30, 42, 3)); // Phần 3
-    selected = selected.concat(getRandomInRange(questions, 43, 62, 3)); // Phần 4 NQ57
-    selected = selected.concat(getRandomInRange(questions, 63, 84, 3)); // Phần 5
-    selected = selected.concat(getRandomInRange(questions, 85, 90, 3)); // Phần 6
-    selected = selected.concat(getRandomInRange(questions, 91, 99, 2)); // Phần 7 NQ129
-    selected = selected.concat(getRandomInRange(questions, 100, 101, 1)); // Tinh huong
+    selected = selected.concat(getRandomInRange(questions, 0, 1, 2)); // Phần tình huống
+    selected = selected.concat(getRandomInRange(questions, 2, 29, 28)); // Phần trắc nghiệm
 
     // 🔥 Trộn đáp án trong mỗi câu hỏi
     const randomizedQuestions = selected.map((q) => shuffleAnswers(q));

@@ -5,9 +5,9 @@ const questionSchema = new mongoose.Schema(
   {
     cauhoi: { type: String, required: true },
     traloi: { type: Array, required: true },
-    dapan: { type: Number, required: true },
+    dapan: { type: Number },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // ✅ Tự động format createdAt & updatedAt sang giờ Việt Nam khi trả về JSON
