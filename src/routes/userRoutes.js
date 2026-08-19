@@ -81,7 +81,7 @@ router.post("/", async (req, res) => {
 
     console.log("🧩 Check user:", normalizedHoten, "=>", count, "lần");
 
-    if (count >= 1) {
+    if (count >= 2) {
       return res
         .status(400)
         .json({ error: "Họ tên này đã xuất hiện quá 2 lần!" });
