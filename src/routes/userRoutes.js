@@ -60,39 +60,49 @@ router.get("/:id", checkAuth, async (req, res) => {
 
 router.post("/", async (req, res) => {
   try {
-    const { hoten, donvi, phone } = req.body;
+    let { hoten, donvi, phone } = req.body;
 
-    // 1️⃣ Kiểm tra nhập đủ thông tin
-    if (!hoten?.trim() || !donvi?.trim() || !phone?.trim()) {
+    // 1️⃣ Chuẩn hóa Unicode dựng sẵn (NFC) và cắt khoảng trắng thừa
+    // Giúp đồng nhất bộ gõ tiếng Việt từ bàn phím iOS/Android (NFD) và PC (NFC)
+    const normalizedHoten = (hoten || "").normalize("NFC").trim();
+    const normalizedDonvi = (donvi || "").normalize("NFC").trim();
+    const normalizedPhone = (phone || "").normalize("NFC").trim();
+
+    // 2️⃣ Kiểm tra dữ liệu bắt buộc
+    if (!normalizedHoten || !normalizedDonvi || !normalizedPhone) {
       return res.status(400).json({ error: "Vui lòng nhập đầy đủ thông tin!" });
     }
 
-    // 2️⃣ Chuẩn hóa dữ liệu
-    const normalizedHoten = hoten.trim();
-    const normalizedPhone = phone.trim();
-
-    // 🧩 Escape tên để tránh lỗi regex
-    const escapedHoten = normalizedHoten.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-    // 3️⃣ Kiểm tra xem họ tên đã tồn tại (không phân biệt hoa/thường)
-    const count = await User.countDocuments({
-      hoten: { $regex: new RegExp(`^${escapedHoten}$`, "i") },
-    });
+    // 3️⃣ Đếm số lần xuất hiện trong Database
+    // Collation { locale: "vi", strength: 2 } tự động bỏ qua hoa/thường theo chuẩn tiếng Việt
+    const count = await User.countDocuments({ hoten: normalizedHoten })
+      .collation({ locale: "vi", strength: 2 });
 
     console.log("🧩 Check user:", normalizedHoten, "=>", count, "lần");
 
-    if (count >= 10) {
-      return res
-        .status(400)
-        .json({ error: "Họ tên này đã xuất hiện quá 2 lần!" });
+    // Giới hạn số lần cho phép (ví dụ: tối đa 2 lần)
+    if (count >= 2) {
+      return res.status(400).json({
+        error: "Họ tên này đã xuất hiện quá số lần cho phép!",
+      });
     }
 
-    // 4️⃣ Nếu chưa vượt quá -> tạo user mới
+    // 4️⃣ Lưu bản ghi mới vào Database (dữ liệu đã chuẩn hóa)
     const newUser = await User.create({
       hoten: normalizedHoten,
-      donvi: donvi.trim(),
+      donvi: normalizedDonvi,
       phone: normalizedPhone,
     });
+
+    return res.status(201).json({
+      message: "Thêm thông tin thành công!",
+      data: newUser,
+    });
+  } catch (error) {
+    console.error("❌ Lỗi xử lý user:", error);
+    return res.status(500).json({ error: "Đã xảy ra lỗi trên hệ thống!" });
+  }
+});
 
     // 5️⃣ Trả về user mới
     res.json(newUser);
