@@ -58,36 +58,113 @@ router.get("/:id", checkAuth, async (req, res) => {
   }
 });
 
+// router.post("/", async (req, res) => {
+//   try {
+//     let { hoten, donvi, phone } = req.body;
+
+//     // 1️⃣ Chuẩn hóa Unicode dựng sẵn (NFC) và cắt khoảng trắng thừa
+//     // Giúp đồng nhất bộ gõ tiếng Việt từ bàn phím iOS/Android (NFD) và PC (NFC)
+//     const normalizedHoten = (hoten || "").normalize("NFC").trim();
+//     const normalizedDonvi = (donvi || "").normalize("NFC").trim();
+//     const normalizedPhone = (phone || "").normalize("NFC").trim();
+
+//     // 2️⃣ Kiểm tra dữ liệu bắt buộc
+//     if (!normalizedHoten || !normalizedDonvi || !normalizedPhone) {
+//       return res.status(400).json({ error: "Vui lòng nhập đầy đủ thông tin!" });
+//     }
+
+//     // 3️⃣ Đếm số lần xuất hiện trong Database
+//     // Collation { locale: "vi", strength: 2 } tự động bỏ qua hoa/thường theo chuẩn tiếng Việt
+//     const count = await User.countDocuments({ hoten: normalizedHoten })
+//       .collation({ locale: "vi", strength: 2 });
+
+//     console.log("🧩 Check user:", normalizedHoten, "=>", count, "lần");
+
+//     // Giới hạn số lần cho phép (ví dụ: tối đa 2 lần)
+//     if (count >= 2) {
+//       return res.status(400).json({
+//         error: "Họ tên này đã xuất hiện quá số lần cho phép!",
+//       });
+//     }
+
+//     // 4️⃣ Lưu bản ghi mới vào Database (dữ liệu đã chuẩn hóa)
+//     const newUser = await User.create({
+//       hoten: normalizedHoten,
+//       donvi: normalizedDonvi,
+//       phone: normalizedPhone,
+//     });
+
+//     return res.status(201).json({
+//       message: "Thêm thông tin thành công!",
+//       data: newUser,
+//     });
+//   } catch (error) {
+//     console.error("❌ Lỗi xử lý user:", error);
+//     return res.status(500).json({ error: "Đã xảy ra lỗi trên hệ thống!" });
+//   }
+// });
+
+//     // 5️⃣ Trả về user mới
+//     res.json(newUser);
+//   } catch (err) {
+//     console.error("🔥 Lỗi xử lý đăng nhập:", err);
+//     res.status(500).json({ error: "Có lỗi xảy ra, vui lòng thử lại!" });
+//   }
+// });
+const express = require("express");
+const router = express.Router();
+const User = require("../models/User");
+
+// 🛠️ HÀM LÀM SẠCH ĐẶC TRỊ CHO BÀN PHÍM ĐIỆN THOẠI
+function cleanInput(str) {
+  if (!str || typeof str !== "string") return "";
+  return (
+    str
+      .normalize("NFC") // Ép về Unicode dựng sẵn
+      // Xóa các ký tự tàng hình / zero-width spaces / BOM thường gặp trên mobile
+      .replace(/[\u200B-\u200D\uFEFF\u200E\u200F\u00AD]/g, "")
+      // Chuyển khoảng trắng không ngắt (non-breaking space) thành khoảng trắng thường
+      .replace(/\u00A0/g, " ")
+      // Gộp nhiều khoảng trắng giữa các chữ thành 1 khoảng trắng duy nhất
+      .replace(/\s+/g, " ")
+      .trim()
+  );
+}
+
 router.post("/", async (req, res) => {
   try {
     let { hoten, donvi, phone } = req.body;
 
-    // 1️⃣ Chuẩn hóa Unicode dựng sẵn (NFC) và cắt khoảng trắng thừa
-    // Giúp đồng nhất bộ gõ tiếng Việt từ bàn phím iOS/Android (NFD) và PC (NFC)
-    const normalizedHoten = (hoten || "").normalize("NFC").trim();
-    const normalizedDonvi = (donvi || "").normalize("NFC").trim();
-    const normalizedPhone = (phone || "").normalize("NFC").trim();
+    // 1️⃣ Làm sạch sâu toàn bộ chuỗi
+    const normalizedHoten = cleanInput(hoten);
+    const normalizedDonvi = cleanInput(donvi);
+    const normalizedPhone = cleanInput(phone);
 
     // 2️⃣ Kiểm tra dữ liệu bắt buộc
     if (!normalizedHoten || !normalizedDonvi || !normalizedPhone) {
       return res.status(400).json({ error: "Vui lòng nhập đầy đủ thông tin!" });
     }
 
-    // 3️⃣ Đếm số lần xuất hiện trong Database
-    // Collation { locale: "vi", strength: 2 } tự động bỏ qua hoa/thường theo chuẩn tiếng Việt
-    const count = await User.countDocuments({ hoten: normalizedHoten })
-      .collation({ locale: "vi", strength: 2 });
+    // 3️⃣ Đếm số lần xuất hiện
+    // Dùng regex case-insensitive trên chuỗi đã được làm sạch sâu
+    const escapedHoten = normalizedHoten.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-    console.log("🧩 Check user:", normalizedHoten, "=>", count, "lần");
+    // Tìm kiếm với collation tiếng Việt
+    const count = await User.countDocuments({
+      hoten: { $regex: new RegExp(`^${escapedHoten}$`, "i") },
+    }).collation({ locale: "vi", strength: 2 });
 
-    // Giới hạn số lần cho phép (ví dụ: tối đa 2 lần)
-    if (count >= 2) {
+    console.log(
+      `🧩 [Check] Client gửi: "${normalizedHoten}" => DB tìm thấy: ${count} lần`,
+    );
+
+    if (count >= 10) {
       return res.status(400).json({
         error: "Họ tên này đã xuất hiện quá số lần cho phép!",
       });
     }
 
-    // 4️⃣ Lưu bản ghi mới vào Database (dữ liệu đã chuẩn hóa)
+    // 4️⃣ Lưu vào DB
     const newUser = await User.create({
       hoten: normalizedHoten,
       donvi: normalizedDonvi,
@@ -99,16 +176,8 @@ router.post("/", async (req, res) => {
       data: newUser,
     });
   } catch (error) {
-    console.error("❌ Lỗi xử lý user:", error);
+    console.error("❌ Lỗi server:", error);
     return res.status(500).json({ error: "Đã xảy ra lỗi trên hệ thống!" });
-  }
-});
-
-    // 5️⃣ Trả về user mới
-    res.json(newUser);
-  } catch (err) {
-    console.error("🔥 Lỗi xử lý đăng nhập:", err);
-    res.status(500).json({ error: "Có lỗi xảy ra, vui lòng thử lại!" });
   }
 });
 
