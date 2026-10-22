@@ -58,87 +58,117 @@ router.get("/:id", checkAuth, async (req, res) => {
   }
 });
 
-// 🛠️ Hàm làm sạch sâu ký tự tàng hình và chuẩn hóa Unicode dựng sẵn (NFC)
-function cleanInput(str) {
-  if (!str || typeof str !== "string") return "";
-  return (
-    str
-      .normalize("NFC")
-      // Xóa ký tự tàng hình, zero-width space, BOM trên mobile
-      .replace(/[\u200B-\u200D\uFEFF\u200E\u200F\u00AD]/g, "")
-      // Đổi non-breaking space thành space thường
-      .replace(/\u00A0/g, " ")
-      // Gộp nhiều dấu cách liền nhau thành 1
-      .replace(/\s+/g, " ")
-      .trim()
-  );
-}
-
-// 🛠️ Hàm đồng nhất vị trí bỏ dấu kiểu mới/cũ (Thuý/Thúy, Hoà/Hòa)
-function standardizeVietnameseAccent(str) {
-  if (!str) return "";
-  return str
-    .replace(/uý/gi, (m) => (m[0] === m[0].toUpperCase() ? "Úy" : "úy"))
-    .replace(/uỳ/gi, (m) => (m[0] === m[0].toUpperCase() ? "Ùy" : "ùy"))
-    .replace(/uỷ/gi, (m) => (m[0] === m[0].toUpperCase() ? "Ủy" : "ủy"))
-    .replace(/uỹ/gi, (m) => (m[0] === m[0].toUpperCase() ? "Ũy" : "ũy"))
-    .replace(/uỵ/gi, (m) => (m[0] === m[0].toUpperCase() ? "Ụy" : "ụy"))
-    .replace(/oà/gi, (m) => (m[0] === m[0].toUpperCase() ? "Òa" : "òa"))
-    .replace(/oá/gi, (m) => (m[0] === m[0].toUpperCase() ? "Óa" : "óa"))
-    .replace(/oả/gi, (m) => (m[0] === m[0].toUpperCase() ? "Ỏa" : "ỏa"))
-    .replace(/oã/gi, (m) => (m[0] === m[0].toUpperCase() ? "Õa" : "õa"))
-    .replace(/oạ/gi, (m) => (m[0] === m[0].toUpperCase() ? "Ọa" : "ọa"))
-    .replace(/oè/gi, (m) => (m[0] === m[0].toUpperCase() ? "Òe" : "òe"))
-    .replace(/oé/gi, (m) => (m[0] === m[0].toUpperCase() ? "Óe" : "óe"))
-    .replace(/oẻ/gi, (m) => (m[0] === m[0].toUpperCase() ? "Ỏe" : "ỏe"))
-    .replace(/oẽ/gi, (m) => (m[0] === m[0].toUpperCase() ? "Õe" : "õe"))
-    .replace(/oẹ/gi, (m) => (m[0] === m[0].toUpperCase() ? "Ọe" : "ọe"));
+function normalizeName(name) {
+  return String(name ?? "")
+    .normalize("NFD") // Chuẩn hóa Unicode
+    .replace(/[\u0300-\u036f]/g, "") // Bỏ dấu thanh và dấu phụ
+    .replace(/[đĐ]/g, "d") // đ/Đ -> d
+    .toLocaleLowerCase("vi-VN") // Chuyển chữ thường
+    .replace(/\s+/g, " ") // Gộp khoảng trắng
+    .trim();
 }
 
 router.post("/", async (req, res) => {
   try {
     const { hoten, donvi, phone } = req.body;
 
-    // 1️⃣ Kiểm tra & Chuẩn hóa đầu vào
-    const rawHoten = cleanInput(hoten);
-    const normalizedDonvi = cleanInput(donvi);
-    const normalizedPhone = cleanInput(phone);
-
-    if (!rawHoten || !normalizedDonvi || !normalizedPhone) {
-      return res.status(400).json({ error: "Vui lòng nhập đầy đủ thông tin!" });
+    // 1. Kiểm tra dữ liệu đầu vào
+    if (
+      typeof hoten !== "string" ||
+      typeof donvi !== "string" ||
+      typeof phone !== "string" ||
+      !hoten.trim() ||
+      !donvi.trim() ||
+      !phone.trim()
+    ) {
+      return res.status(400).json({
+        error: "Vui lòng nhập đầy đủ thông tin!",
+      });
     }
 
-    // Chuẩn hóa vị trí dấu tiếng Việt (đảm bảo đồng nhất giữa mobile & PC)
-    const normalizedHoten = standardizeVietnameseAccent(rawHoten);
+    // 2. Chuẩn hóa dữ liệu đầu vào
+    const normalizedHoten = hoten.normalize("NFC").trim().replace(/\s+/g, " ");
 
-    // 2️⃣ Kiểm tra họ tên tồn tại bằng Collation tiếng Việt (không phân biệt hoa/thường)
-    const count = await User.countDocuments({
-      hoten: normalizedHoten,
-    }).collation({ locale: "vi", strength: 2 });
+    const searchName = normalizeName(normalizedHoten);
 
-    console.log("🧩 Check user:", normalizedHoten, "=>", count, "lần");
+    // 3. Lấy họ tên đã lưu và so sánh sau chuẩn hóa
+    const users = await User.find({}, { hoten: 1, _id: 0 }).lean();
 
-    // Đã chỉnh sửa ngưỡng so sánh đúng với thông báo (>= 2 lần)
-    if (count >= 2) {
-      return res
-        .status(400)
-        .json({ error: "Họ tên này đã xuất hiện quá 2 lần!" });
+    const count = users.filter(
+      (user) => normalizeName(user.hoten) === searchName,
+    ).length;
+
+    console.log("Kiểm tra họ tên:", normalizedHoten, "=>", count);
+
+    // 4. Giới hạn số lần xuất hiện
+    if (count >= 10) {
+      return res.status(400).json({
+        error: "Họ tên này đã xuất hiện 10 lần, không thể đăng ký thêm!",
+      });
     }
 
-    // 3️⃣ Tạo user mới
+    // 5. Tạo người dùng mới
     const newUser = await User.create({
       hoten: normalizedHoten,
-      donvi: normalizedDonvi,
-      phone: normalizedPhone,
+      donvi: donvi.trim(),
+      phone: phone.trim(),
     });
 
-    // 4️⃣ Trả về dữ liệu
+    // 6. Trả kết quả
     return res.status(201).json(newUser);
   } catch (err) {
-    console.error("🔥 Lỗi xử lý đăng ký:", err);
-    return res.status(500).json({ error: "Có lỗi xảy ra, vui lòng thử lại!" });
+    console.error("Lỗi xử lý đăng ký:", err);
+
+    return res.status(500).json({
+      error: "Có lỗi xảy ra, vui lòng thử lại!",
+    });
   }
 });
+
+// router.post("/", async (req, res) => {
+//   try {
+//     const { hoten, donvi, phone } = req.body;
+
+//     // 1️⃣ Kiểm tra nhập đủ thông tin
+//     if (!hoten?.trim() || !donvi?.trim() || !phone?.trim()) {
+//       return res.status(400).json({ error: "Vui lòng nhập đầy đủ thông tin!" });
+//     }
+
+//     // 2️⃣ Chuẩn hóa dữ liệu
+//     const normalizedHoten = hoten.trim();
+//     const normalizedPhone = phone.trim();
+
+//     // 🧩 Escape tên để tránh lỗi regex
+//     const escapedHoten = normalizedHoten.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+//     // 3️⃣ Kiểm tra xem họ tên đã tồn tại (không phân biệt hoa/thường)
+//     const count = await User.countDocuments({
+//       hoten: { $regex: new RegExp(`^${escapedHoten}$`, "i") },
+//     });
+
+//     console.log("🧩 Check user:", normalizedHoten, "=>", count, "lần");
+
+//     if (count >= 10) {
+//       return res
+//         .status(400)
+//         .json({ error: "Họ tên này đã xuất hiện quá 2 lần!" });
+//     }
+
+//     // 4️⃣ Nếu chưa vượt quá -> tạo user mới
+//     const newUser = await User.create({
+//       hoten: normalizedHoten,
+//       donvi: donvi.trim(),
+//       phone: normalizedPhone,
+//     });
+
+//     // 5️⃣ Trả về user mới
+//     res.json(newUser);
+//   } catch (err) {
+//     console.error("🔥 Lỗi xử lý đăng nhập:", err);
+//     res.status(500).json({ error: "Có lỗi xảy ra, vui lòng thử lại!" });
+//   }
+// });
+
 // Sửa user
 router.put("/:id", checkAuth, async (req, res) => {
   try {
