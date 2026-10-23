@@ -101,9 +101,9 @@ router.post("/", async (req, res) => {
     console.log("Kiểm tra họ tên:", normalizedHoten, "=>", count);
 
     // 4. Giới hạn số lần xuất hiện
-    if (count >= 10) {
+    if (count >= 2) {
       return res.status(400).json({
-        error: "Họ tên này đã xuất hiện 10 lần, không thể đăng ký thêm!",
+        error: "Họ tên này đã xuất hiện 2 lần, không thể đăng ký thêm!",
       });
     }
 
