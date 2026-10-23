@@ -58,15 +58,31 @@ router.get("/:id", checkAuth, async (req, res) => {
   }
 });
 
-function normalizeName(name) {
-  return String(name ?? "")
-    .normalize("NFD") // Chuẩn hóa Unicode
-    .replace(/[\u0300-\u036f]/g, "") // Bỏ dấu thanh và dấu phụ
-    .replace(/[đĐ]/g, "d") // đ/Đ -> d
-    .toLocaleLowerCase("vi-VN") // Chuyển chữ thường
-    .replace(/\s+/g, " ") // Gộp khoảng trắng
-    .trim();
+function normalizeName(str) {
+  if (!str) return "";
+
+  // 1. Chuyển về chữ thường và chuẩn hóa NFC
+  let s = str.normalize("NFC").toLowerCase();
+
+  // 2. Bảng thay thế trực tiếp toàn bộ nguyên âm tiếng Việt (bao gồm cả úy, uý, ý,...)
+  s = s.replace(/[àáạảãâầấậẩẫăằắặẳẵ]/g, "a");
+  s = s.replace(/[èéẹẻẽêềếệểễ]/g, "e");
+  s = s.replace(/[ìíịỉĩ]/g, "i");
+  s = s.replace(/[òóọỏõôồốộổỗơờớợởỡ]/g, "o");
+  s = s.replace(/[ùúụủũưừứựửữ]/g, "u");
+  s = s.replace(/[ỳýỵỷỹ]/g, "y"); // Đảm bảo mọi chữ ý/ỳ/ỷ/ỹ/ỵ đều về 'y'
+  s = s.replace(/[đ]/g, "d");
+
+  // 3. Dự phòng cho chuỗi dạng tổ hợp (NFD) nếu người dùng gõ Unicode Tổ hợp
+  s = s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Xóa sạch các dấu thanh tổ hợp còn sót
+    .replace(/[^\x00-\x7F]/g, ""); // Xóa bỏ mọi ký tự phi ASCII
+
+  // 4. Xóa khoảng trắng ẩn, khoảng trắng thừa
+  return s.trim().replace(/\s+/g, " ");
 }
+
 function normalizeName(str) {
   if (!str) return "";
 
