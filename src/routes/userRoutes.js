@@ -67,6 +67,17 @@ function normalizeName(name) {
     .replace(/\s+/g, " ") // Gộp khoảng trắng
     .trim();
 }
+function normalizeName(str) {
+  if (!str) return "";
+  return str
+    .normalize("NFD") // Tách tổ hợp ký tự và dấu
+    .replace(/[\u0300-\u036f]/g, "") // Xóa tất cả dấu thanh
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "d")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, " ");
+}
 
 router.post("/", async (req, res) => {
   try {
@@ -86,19 +97,24 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // 2. Chuẩn hóa dữ liệu đầu vào
+    // 2. Chuẩn hóa hiển thị (NFC giữ dấu) và chuẩn hóa so sánh (bỏ dấu)
     const normalizedHoten = hoten.normalize("NFC").trim().replace(/\s+/g, " ");
+    const searchName = normalizeName(normalizedHoten); // vd: "Thúy" hay "Thuý" đều ra "thuy"
 
-    const searchName = normalizeName(normalizedHoten);
-
-    // 3. Lấy họ tên đã lưu và so sánh sau chuẩn hóa
+    // 3. Lấy danh sách tên từ DB và so sánh
+    // (Dùng lean() và chỉ lấy trường hoten để tối ưu bộ nhớ)
     const users = await User.find({}, { hoten: 1, _id: 0 }).lean();
 
     const count = users.filter(
       (user) => normalizeName(user.hoten) === searchName,
     ).length;
 
-    console.log("Kiểm tra họ tên:", normalizedHoten, "=>", count);
+    console.log(
+      "Kiểm tra họ tên:",
+      normalizedHoten,
+      `(${searchName}) =>`,
+      count,
+    );
 
     // 4. Giới hạn số lần xuất hiện
     if (count >= 2) {
@@ -109,7 +125,7 @@ router.post("/", async (req, res) => {
 
     // 5. Tạo người dùng mới
     const newUser = await User.create({
-      hoten: normalizedHoten,
+      hoten: normalizedHoten, // Lưu tên hiển thị đúng dấu gốc
       donvi: donvi.trim(),
       phone: phone.trim(),
     });
