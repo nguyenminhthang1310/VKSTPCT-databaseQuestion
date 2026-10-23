@@ -69,14 +69,30 @@ function normalizeName(name) {
 }
 function normalizeName(str) {
   if (!str) return "";
-  return str
-    .normalize("NFD") // Tách tổ hợp ký tự và dấu
-    .replace(/[\u0300-\u036f]/g, "") // Xóa tất cả dấu thanh
-    .replace(/đ/g, "d")
-    .replace(/Đ/g, "d")
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, " ");
+
+  return (
+    str
+      // 1. Chuyển thành NFC trước để gom cụm ký tự gõ từ mọi bộ gõ
+      .normalize("NFC")
+      // 2. Thay khoảng trắng không ngắt (Non-breaking space \u00a0) thành khoảng trắng thường
+      .replace(
+        /[\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]/g,
+        " ",
+      )
+      // 3. Đưa về chữ thường TRƯỚC TIÊN
+      .toLowerCase()
+      // 4. Xử lý chữ đ/Đ trước khi tách NFD
+      .replace(/đ/g, "d")
+      .replace(/Đ/g, "d")
+      // 5. Tách NFD và xóa toàn bộ dấu thanh/mũ
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      // 6. Xóa ký tự vô hình/dấu đặc biệt còn sót (zero-width space,...)
+      .replace(/[^\x00-\x7F]/g, "")
+      // 7. Cắt tỉa khoảng trắng
+      .trim()
+      .replace(/\s+/g, " ")
+  );
 }
 
 router.post("/", async (req, res) => {
