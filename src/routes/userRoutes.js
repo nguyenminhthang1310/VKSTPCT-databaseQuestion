@@ -149,7 +149,7 @@ router.post("/", async (req, res) => {
     );
 
     // 4. Giới hạn số lần xuất hiện
-    if (count >= 2) {
+    if (count >= 5) {
       return res.status(400).json({
         error: "Họ tên này đã xuất hiện 2 lần, không thể đăng ký thêm!",
       });
