@@ -4,21 +4,45 @@ const Submission = require("../models/Submission");
 const router = express.Router();
 
 // ✅ POST: tạo submission
+// router.post("/", async (req, res) => {
+//   try {
+//     console.log("📥 Nhận submission:", req.body);
+
+//     const submission = new Submission(req.body);
+//     const saved = await submission.save();
+
+//     // console.log("✅ Lưu submission thành công:", saved);
+//     res.status(201).json(saved);
+//   } catch (err) {
+//     console.error("❌ Lỗi khi lưu submission:", err.message);
+//     res.status(500).json({ error: err.message });
+//   }
+// });
 router.post("/", async (req, res) => {
   try {
-    console.log("📥 Nhận submission:", req.body);
+    const { user_id, diem, thoigianlambai, answers, solanvipham } = req.body;
 
+    // 1. Lưu chi tiết bài thi (Submission)
     const submission = new Submission(req.body);
     const saved = await submission.save();
 
-    // console.log("✅ Lưu submission thành công:", saved);
+    // 2. Tự động Cập nhật điểm cho User luôn ngay tại đây
+    if (user_id) {
+      const updateData = {
+        traloidung: diem,
+        thoigianlambai: thoigianlambai,
+      };
+      if (solanvipham !== undefined) updateData.solanvipham = solanvipham;
+
+      await User.findByIdAndUpdate(user_id, updateData);
+    }
+
     res.status(201).json(saved);
   } catch (err) {
-    console.error("❌ Lỗi khi lưu submission:", err.message);
+    console.error("❌ Lỗi khi lưu bài thi:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
-
 // ✅ GET: lấy tất cả submissions
 router.get("/", async (req, res) => {
   try {
@@ -69,5 +93,23 @@ router.delete("/:userId", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+// ✅ DELETE: xóa tất cả submissions
+router.delete("/", async (req, res) => {
+  try {
+    const result = await Submission.deleteMany({});
 
+    if (result.deletedCount === 0) {
+      return res
+        .status(404)
+        .json({ message: "Không có submission nào để xóa" });
+    }
+
+    res.json({
+      message: `Đã xóa thành công toàn bộ ${result.deletedCount} submissions trên hệ thống`,
+    });
+  } catch (err) {
+    console.error("❌ Lỗi khi xóa tất cả submissions:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
 module.exports = router;
