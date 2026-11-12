@@ -25,7 +25,7 @@ router.get("/", async (req, res) => {
     const submissions = await Submission.find().sort({ createdAt: -1 });
     res.json(submissions);
   } catch (err) {
-    console.error("❌ Lỗi lấy submissions:", err.message);
+    // console.error("❌ Lỗi lấy submissions:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
