@@ -4,45 +4,21 @@ const Submission = require("../models/Submission");
 const router = express.Router();
 
 // ✅ POST: tạo submission
-// router.post("/", async (req, res) => {
-//   try {
-//     console.log("📥 Nhận submission:", req.body);
-
-//     const submission = new Submission(req.body);
-//     const saved = await submission.save();
-
-//     // console.log("✅ Lưu submission thành công:", saved);
-//     res.status(201).json(saved);
-//   } catch (err) {
-//     console.error("❌ Lỗi khi lưu submission:", err.message);
-//     res.status(500).json({ error: err.message });
-//   }
-// });
 router.post("/", async (req, res) => {
   try {
-    const { user_id, diem, thoigianlambai, answers, solanvipham } = req.body;
+    console.log("📥 Nhận submission:", req.body);
 
-    // 1. Lưu chi tiết bài thi (Submission)
     const submission = new Submission(req.body);
     const saved = await submission.save();
 
-    // 2. Tự động Cập nhật điểm cho User luôn ngay tại đây
-    if (user_id) {
-      const updateData = {
-        traloidung: diem,
-        thoigianlambai: thoigianlambai,
-      };
-      if (solanvipham !== undefined) updateData.solanvipham = solanvipham;
-
-      await User.findByIdAndUpdate(user_id, updateData);
-    }
-
+    // console.log("✅ Lưu submission thành công:", saved);
     res.status(201).json(saved);
   } catch (err) {
-    console.error("❌ Lỗi khi lưu bài thi:", err.message);
+    console.error("❌ Lỗi khi lưu submission:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
+
 // ✅ GET: lấy tất cả submissions
 router.get("/", async (req, res) => {
   try {
